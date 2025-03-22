@@ -1,185 +1,214 @@
-﻿using System;
+﻿using Assignment4coplur;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConsoleApp6
+namespace Assignment4coplur
 {
-    public class Program
+class FoodItem
     {
-        public static void Main(string[] args)
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public double Price { get; set; }
+        public string Category { get; set; }
+
+        public FoodItem(int id, string name, double price, string category)
         {
-            Customer customer = new GoldCustomerRegister
-            {
-                CustomerId = 2,
-                FirstName = "Kohinoor",
-                LastName = "Tiwari",
-                Email = "tiwarikohinoor@gmail.com"
-            };
-            customer.Register();
-
-            ICustomerGetDiscount newDiscount = new GoldCustomerDiscount();
-            newDiscount.CustomerDiscountPercentage();
-
-            IProcessOrder process = new ProcessOrderCLass(newDiscount);
-            process.ProcessOrder();
+            Id = id;
+            Name = name;
+            Price = price;
+            Category = category;
         }
-    }
-  
-    
-    public class Customer
-    {
-        public int CustomerId { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
 
-        public virtual void Register()
+        public override string ToString()
         {
-            Console.WriteLine("Customer is Registered!!");
+            return $"{Id}. {Name} - ${Price} [{Category}]";
         }
     }
 
-    public class PlatinumCustomerRegister : Customer
+}
+class Order
+{
+    public int OrderId { get; set; }
+    public List<FoodItem> Items { get; set; }
+
+    public Order(int orderId)
     {
-        public override void Register()
+        OrderId = orderId;
+        Items = new List<FoodItem>();
+    }
+
+    public void AddItem(FoodItem item)
+    {
+        Items.Add(item);
+    }
+
+    public override string ToString()
+    {
+        string details = $"Order {OrderId}:\n";
+        foreach (var item in Items)
         {
-            Console.WriteLine($"{FirstName} is registered as a platinum customer!!");
+            details += $"- {item.Name} (${item.Price})\n";
+        }
+        return details;
+    }
+}
+class FoodOrderingSystem
+{
+    private List<FoodItem> menu = new List<FoodItem>();     
+    private Dictionary<int, List<FoodItem>> orders = new Dictionary<int, List<FoodItem>>(); 
+    private Queue<int> pendingOrders = new Queue<int>();  
+    private Stack<int> deliveredOrders = new Stack<int>();    
+    private HashSet<string> categories = new HashSet<string>();     
+    private int orderCounter = 1;
+
+      
+    public void AddFoodItem(string name, double price, string category)
+    {
+        int id = menu.Count + 1;
+        menu.Add(new FoodItem(id, name, price, category));
+        categories.Add(category);
+        Console.WriteLine($"Added: {name} (${price}) under {category}");
+    }
+
+         public void ShowMenu()
+    {
+        Console.WriteLine("\n--- Menu ---");
+        foreach (var item in menu)
+        {
+            Console.WriteLine(item);
         }
     }
 
-    public class GoldCustomerRegister : Customer
+     
+    public void PlaceOrder(List<int> foodItemIds)
     {
-        public override void Register()
+        Order order = new Order(orderCounter);
+        foreach (int id in foodItemIds)
         {
-            Console.WriteLine($"{FirstName} is registered as a gold customer!!");
+            FoodItem item = menu.Find(f => f.Id == id);
+            if (item != null)
+                order.AddItem(item);
         }
 
+        orders[orderCounter] = order.Items;
+        pendingOrders.Enqueue(orderCounter);
+        Console.WriteLine($"Order {orderCounter} placed!");
+        orderCounter++;
     }
 
-    public class SilverCustomerRegister : Customer
+      
+    public void DeliverOrder()
     {
-        public override void Register()
+        if (pendingOrders.Count > 0)
         {
-            Console.WriteLine($"{FirstName} is registered as a silver customer!!");
+            int orderId = pendingOrders.Dequeue();
+            deliveredOrders.Push(orderId);
+            Console.WriteLine($"Order {orderId} delivered!");
         }
-    }
-
-    public class BronzeCustomerRegister : Customer
-    {
-        public override void Register()
+        else
         {
-            Console.WriteLine($"{FirstName} is registered as a bronze customer!!");
-        }
-    }
-
-
-
-    public interface ISaveCustomer
-    {
-        bool SaveCustomer();
-    }
-
-    public class SavedCustomer : ISaveCustomer
-    {
-        private Customer _customer;
-
-        public SavedCustomer(Customer customer)
-        {
-            _customer = customer;
-        }
-
-        public bool SaveCustomer()
-        {
-            Console.WriteLine($"{_customer.FirstName} is saved to th db.");
-            return true;
-        }
-
-    }
-
-    public interface ICustomerGetDiscount
-    {
-        int CustomerDiscountPercentage();
-    }
-
-    public class PlatinumCustomerDiscount : ICustomerGetDiscount
-    {
-        public int CustomerDiscountPercentage()
-        {
-            return 20;
+            Console.WriteLine("No pending orders!");
         }
     }
 
-    public class GoldCustomerDiscount : ICustomerGetDiscount
+       
+    public void ShowPendingDeliveries()
     {
-        public int CustomerDiscountPercentage()
+        Console.WriteLine("\n--- Pending Orders ---");
+        foreach (var orderId in pendingOrders)
         {
-            return 25;
+            Console.WriteLine($"Order {orderId}");
         }
     }
 
-
-    public class SilverCustomerDiscount : ICustomerGetDiscount
+       
+    public void ShowDeliveredOrders()
     {
-        public int CustomerDiscountPercentage()
+        Console.WriteLine("\n--- Delivered Orders ---");
+        foreach (var orderId in deliveredOrders)
         {
-            return 15;
+            Console.WriteLine($"Order {orderId}");
         }
     }
 
-    public class BronzeCustomerDiscount : ICustomerGetDiscount
+       
+    public void ShowFoodCategories()
     {
-        public int CustomerDiscountPercentage()
+        Console.WriteLine("\n--- Food Categories ---");
+        foreach (var category in categories)
         {
-            return 25;
-        }
-    }
-
-
-    public interface IProcessOrder
-    {
-        void ProcessOrder();
-    }
-
-    public class ProcessOrderCLass : IProcessOrder
-    {
-        private ICustomerGetDiscount _getDiscount;
-
-        public ProcessOrderCLass(ICustomerGetDiscount  getDiscount)
-        {
-            _getDiscount = getDiscount;
-        }
-
-        public void ProcessOrder()
-        {
-            var discount = _getDiscount.CustomerDiscountPercentage();
-            Console.WriteLine($"Customer has got discount of {discount}");
-            Console.WriteLine("Order is Placed");
-        }
-
-
-    }
-
-    public class Leads
-    {
-        public string name;
-        public string email;
-
-        public void GetLeadDetails()
-        {
-            Console.WriteLine($"chating with {name} ");
+            Console.WriteLine(category);
         }
     }
 }
+class Program
+{
+    static void Main()
+    {
+        FoodOrderingSystem system = new FoodOrderingSystem();
 
+        
+        system.AddFoodItem("Chilli potato", 12.99, "Fast Food");
+        system.AddFoodItem("Burger", 5.99, "Fast Food");
+        system.AddFoodItem("whitesauce pasta", 8.99, "Italian");
+        system.AddFoodItem("Colddrinks", 1.99, "Beverage");
 
-    
+        while (true)
+        {
+            Console.WriteLine("\n1. Show Menu");
+            Console.WriteLine("2. Place Order");
+            Console.WriteLine("3. Deliver Order");
+            Console.WriteLine("4. Show Pending Deliveries");
+            Console.WriteLine("5. Show Delivered Orders");
+            Console.WriteLine("6. Show Food Categories");
+            Console.WriteLine("7. Exit");
+            Console.Write("Choose an option: ");
 
-    
-    
-         
-    
- 
+            int choice = int.Parse(Console.ReadLine());
 
+            switch (choice)
+            {
+                case 1:
+                    system.ShowMenu();
+                    break;
+
+                case 2:
+                    Console.Write("Enter food item IDs separated by space: ");
+                    string[] input = Console.ReadLine().Split(' ');
+                    List<int> foodItemIds = new List<int>();
+                    foreach (string id in input)
+                        foodItemIds.Add(int.Parse(id));
+                    system.PlaceOrder(foodItemIds);
+                    break;
+
+                case 3:
+                    system.DeliverOrder();
+                    break;
+
+                case 4:
+                    system.ShowPendingDeliveries();
+                    break;
+
+                case 5:
+                    system.ShowDeliveredOrders();
+                    break;
+
+                case 6:
+                    system.ShowFoodCategories();
+                    break;
+
+                case 7:
+                    Console.WriteLine("Exiting...");
+                    return;
+
+                default:
+                    Console.WriteLine("Invalid choice, try again!");
+                    break;
+            }
+        }
+    }
+}
 
